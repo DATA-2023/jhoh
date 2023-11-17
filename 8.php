@@ -89,14 +89,13 @@
             // MySQL 연결
             $conn = new mysqli($host, $user, $pw, $dbName);
 
-			
+			$user_input = isset($_POST['user_input']) ? $_POST['user_input'] : '';
 
 // Connection check
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 	
-	$user_input = $_POST['user_input'];
     	
 	// MySQL 쿼리 실행
     $sql = "SELECT user_id, gender, age_group, total_distance
