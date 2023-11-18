@@ -74,7 +74,7 @@
         <h2>주차별 따릉이 최다 이용자 순위</h2>
 		<!-- 앞에꺼랑 같이 붙일때 주석 제거하기
 		<canvas id="ranking"></canvas> -->
-        <p>주차별 거리를 기준으로 한 따릉이 최다 이용자 순위에 대한 정보입니다.<br> </p>
+        <p>주차별 거리를 기준으로 한 따릉이 최다 이용자에 대한 정보입니다.<br> </p>
      
 <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
   Enter week number: <input type="number" name="user_input">
@@ -95,10 +95,9 @@
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
-	
-    	
+
 	// MySQL 쿼리 실행
-    $sql = "SELECT user_id, gender, age_group, total_distance
+    $sql = "SELECT ROW_NUMBER() OVER (ORDER BY total_distance DESC) AS ranking, user_id, gender, age_group, total_distance
             FROM (
                 SELECT u.user_id, u.gender, u.age_group, 
                     SUM(wu.moving_distance) AS total_distance,
@@ -122,10 +121,12 @@ if ($conn->connect_error) {
     // 쿼리 결과 출력
     if ($result->num_rows > 0) {
         echo '<br>6월 <label>' . $user_input . '</label>';
-        echo "주차 따릉이 최다 이용자 순위<br>";
-		echo "<br><table border='1'><tr><th>User ID</th><th> Gender </th><th>Age Group</th><th>Total Distance </th></tr>";
+        echo "주차 따릉이 최다 이용자는 다음과 같습니다.<br>";
+		echo "<br><table border='1'><tr><th>Ranking</th><th> User ID</th><th> Gender </th><th>Age Group</th><th>Total Distance (m) </th></tr>";
         while($row = $result->fetch_assoc()) {
-            echo "<tr><td>" . $row["user_id"]. "</td><td>" . $row["gender"]. "</td><td>" . $row["age_group"]. "</td><td>" . $row["total_distance"]. "</td></tr>";
+            echo "<tr><td>" . 
+			$row["ranking"]. "</td><td>" . 	
+			$row["user_id"]. "</td><td>" . $row["gender"]. "</td><td>" . $row["age_group"]. "</td><td>" . $row["total_distance"]. "</td></tr>";
         }
         echo "</table>";
     } else {
