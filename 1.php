@@ -1,3 +1,13 @@
+<?php
+    session_start();
+
+    // 세션이 없으면 로그인 페이지로 이동
+    if (!isset($_SESSION["adminLoggedIn"]) || !$_SESSION["adminLoggedIn"]) {
+        header("Location: login.php");
+        exit();
+    }
+?>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -47,49 +57,51 @@
             background-color: #0078d4;
             color: #fff;
         }
-        /* 네비게이션바 스타일 */
-        nav {
+         /* 네비게이션바 스타일 */
+         nav {
             background-color: #333;
             color: #fff;
             text-align: center;
             padding: 10px;
+            text-decoration: none; 
         }
         nav a {
             color: #fff;
             text-decoration: none;
-            margin: 10px;
+            margin: 10px; 
         }
-		input[type='radio'] {
-			transform: scale(1.3); /* 라디오 버튼 크기 키우기 */
-			margin-right: px; /* 간격 조정 */
-		}
-	
-		/* 라디오 버튼 옆 텍스트 크기 키우기 */
-		label {
-			font-size: 16px;
-		}
+        nav a.active {
+            text-decoration: underline; 
+        }
+
     </style>
 </head>
 <body>
+    <div style="text-align: right; background-color: #0078d4;"><button style=" margin: 10px;"><a href="logout.php" style="text-decoration: none; color: black; font-weight: bold;">관리자 모드 종료</a></button></div>
     <header>
         <h1>서울시 공공자전거 이용정보 보고서</h1>
-    </header>
+    </header>   
     <nav>
-        <!-- 자기 파트 웹페이지 만들어서 제목 추하 html파일 연결하기-->
-        <a href="#fix_avg">고장수리 평균 소요시간</a>
-    </nav>
+    <a href="1.php" class="active" >고장수리 평균 소요시간</a>
+    <a href="2.php" >이용 많은 정류소</a>
+    <a href="3.php" >회원등록 및 회원삭제</a>
+    <a href="4.php" >이동시간 대비 이동거리</a>
+    <a href="5.php" >회원별 운동량과 탄소절감량</a><br>
+    <a href="6.php" >서울 소재 구별 대여 현황</a>
+    <a href="7.php" >회원별 누적 이용금액</a>
+    <a href="8.php" >주차별 따릉이 최다 이용자 순위</a>
+    <a href="9.php" >고장난 자전거 복구 날짜 변경</a>
+</nav>
     <div class="container">
         <h2>고장사유별 수리 평균 소요시간</h2>
-		<!-- 앞에꺼랑 같이 붙일때 주석 제거하기
-		<canvas id="fix_avg"></canvas> -->
         <p>서울시 공공자전거를 이용하는 회원들이 접수한 자전거 고장내역 중  "사유별 수리 평균 소요시간" 에 대한 정보입니다.<br> </p>
      
 
         <?php
             $host="localhost";
-            $user="root";
-            $pw="DS.UpGNIk4[e(e2s";
-            $dbName="bicycle_db";
+            $user="team17";
+            $pw="team17";
+            $dbName="team17";
 
             // MySQL 연결
             $conn = new mysqli($host, $user, $pw, $dbName);
@@ -98,6 +110,8 @@
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
+
+//$currentPage = isset($_GET['page']) ? $_GET['page'] : 1;
 
 // Get the submitted reason or default to an empty string
 $selected_reason = isset($_GET['reason']) ? $_GET['reason'] : '';
@@ -113,6 +127,7 @@ foreach ($reasons as $reason) {
     }
     echo ">$reason</label>";
 }
+echo "&nbsp;";
 echo '<input type="submit" name="submit" value="조회">';
 echo '</form>';
 

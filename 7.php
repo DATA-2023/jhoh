@@ -10,7 +10,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<meta charset="utf-8">
     <title>서울시 공공자전거 이용정보 보고서</title>
     <style>
         body {
@@ -73,9 +72,6 @@
             text-decoration: underline; 
         }
     
-    
-
-
     </style>
 </head>
 <body>
@@ -90,18 +86,25 @@
     <a href="4.php" >이동시간 대비 이동거리</a>
     <a href="5.php" >회원별 운동량과 탄소절감량</a><br>
     <a href="6.php" >서울 소재 구별 대여 현황</a>
-    <a href="7.php" >회원별 누적 이용금액</a>
-    <a href="8.php" class="active" >주차별 따릉이 최다 이용자 순위</a>
+    <a href="7.php" class="active" >회원별 누적 이용금액</a>
+    <a href="8.php" >주차별 따릉이 최다 이용자 순위</a>
     <a href="9.php" >고장난 자전거 복구 날짜 변경</a>
 </nav>
     <div class="container">
-        <h2>주차별 따릉이 최다 이용자 순위</h2>
-        <p>주차별 거리를 기준으로 한 따릉이 최다 이용자에 대한 정보입니다.<br> </p>
-       
-<form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
-  Enter week number: <input type="number" name="user_input">
-  <input type="submit" name="submit" value="입력">
-</form>
+        <h2>회원별 누적 이용금액</h2>
+        <p>서울시 공공자전거를 이용하는 회원들의 누적 이용금액에 대한 정보입니다.<br>나이대별, 성별, 국적별로 확인하실 수 있습니다.</p>
+        <form method="post">
+            <label for="category">구분:</label>
+            <select name="category" id="category">
+                <option value="all">전체</option>
+                <option value="gender">성별</option>
+                <option value="age_group">나이대별</option>
+                <option value="nationality">국적별</option>
+            </select>
+
+            <input type="submit" value="조회">
+        </form>
+
         <?php
             $host="localhost";
             $user="team17";
@@ -111,56 +114,58 @@
             // MySQL 연결
             $conn = new mysqli($host, $user, $pw, $dbName);
 
-			$user_input = isset($_POST['user_input']) ? $_POST['user_input'] : '';
+            // 연결 확인
+            if ($conn->connect_error) {
+                die("Connection failed: " . $conn->connect_error);
+            }
 
-// Connection check
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
 
-	// MySQL 쿼리 실행
-    $sql = "SELECT ROW_NUMBER() OVER (ORDER BY total_distance DESC) AS ranking, user_id, gender, age_group, total_distance
-            FROM (
-                SELECT u.user_id, u.gender, u.age_group, 
-                    SUM(wu.moving_distance) AS total_distance,
-                    TIMESTAMPDIFF(WEEK, '2023-06-01', rh.rent_datetime) + 1 AS week_number,
-                    RANK() OVER (ORDER BY SUM(wu.moving_distance) DESC) AS weekly_rank
-                FROM user u
-                JOIN usage_per_user upu ON u.user_id = upu.user_id
-                JOIN workout_usage wu ON upu.usage_id = wu.usage_id
-                JOIN rent_history rh ON upu.usage_id = rh.usage_id
-                WHERE TIMESTAMPDIFF(WEEK, '2023-06-01', rh.rent_datetime) + 1 = ?
-                GROUP BY u.user_id, u.gender, u.age_group, TIMESTAMPDIFF(WEEK, '2023-06-01', rh.rent_datetime)
-            ) AS TotalDistancePerUser
-            WHERE weekly_rank <= 10
-            ORDER BY total_distance DESC";
+            // 사용자의 입력 받기
+            $category = isset($_POST['category']) ? $_POST['category'] : 'all';
+            
+            $query = "SELECT ROUND(AVG(cumulative_usage_amount),0) FROM user";
 
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $user_input); // 정수형 파라미터를 바인딩
-    $stmt->execute();
-    $result = $stmt->get_result();
+            // 쿼리 작성
+            if ($category == 'gender'){
+                $query = "SELECT gender, ROUND(AVG(cumulative_usage_amount),0) AS average_usage FROM user GROUP BY gender;";
+            }
+            if ($category == 'age_group'){
+                $query = "SELECT age_group, ROUND(AVG(cumulative_usage_amount),0) AS average_usage FROM user GROUP BY age_group;";
+            }
+            if ($category == 'nationality'){
+                $query = "SELECT nationality, ROUND(AVG(cumulative_usage_amount),0) AS average_usage FROM user GROUP BY nationality;";
+            }
 
-    // 쿼리 결과 출력
-    if ($result->num_rows > 0) {
-        echo '<br>6월 <label>' . $user_input . '</label>';
-        echo "주차 따릉이 최다 이용자는 다음과 같습니다.<br>";
-		echo "<br><table border='1'><tr><th>Ranking</th><th> Gender </th><th>Age Group</th><th>Total Distance (m) </th></tr>";
-        while($row = $result->fetch_assoc()) {
-            echo "<tr><td>" . 
-			$row["ranking"]. "</td><td>" . 	
-			$row["gender"]. "</td><td>" . $row["age_group"]. "</td><td>" . $row["total_distance"]. "</td></tr>";
-        }
-        echo "</table>";
-    } else {
-        echo "<br>결과가 없습니다.";
-    }
+            // 쿼리 실행
+            $result = $conn->query($query);
 
-    // 연결 종료
-    $stmt->close();
-    $conn->close();
-	
-?>
 
+            // 결과 출력
+            echo "<h2>회원 구분별 누적 이용금액 평균</h2>";
+            echo "<table border='1'>";
+            if($category!='all'){
+                echo "<tr><th>구분</th><th>이용금액 평균 (원)</th></tr>";
+            }
+            else{
+                echo "<tr><th>이용금액 평균 (원)</tr>";
+            }
+            while ($row = $result->fetch_assoc()) {
+                
+                echo "<tr>";
+        
+                // 각 행의 열을 동적으로 처리
+                foreach ($row as $column) {
+                    echo "<td>$column</td>";
+                
+                }
+
+                echo "</tr>";
+            }
+            echo "</table>";
+        
+            // 연결 종료
+            $conn->close();
+        ?>
     </div>
 
     
